@@ -1,0 +1,21 @@
+{
+    "name": "edebex/translator-tools",
+    "description": "A set of tool for YAML translation files used by Symfony. Find missing or duplicate keys (cross languages), sort keys, etc...",
+    "type": "project",
+    "require": {
+        "symfony/console": "^3.3",
+        "symfony/yaml": "^3.3",
+        "symfony/finder": "^3.3"
+    },
+    "autoload": {
+        "psr-4": { "": "src/" }
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ellis Benjamin",
+            "email": "ellis.benjamin@outlook.com"
+        }
+    ],
+    "minimum-stability": "stable"
+}
