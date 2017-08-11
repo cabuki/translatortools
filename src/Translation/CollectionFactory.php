@@ -16,6 +16,19 @@ class CollectionFactory
 
     public static function createFromFinder(Finder $finder, CollectionFactoryObserverInterface $observer)
     {
+        $collection = new DomainCollection();
+        foreach ( $finder as $file )
+        {
+            list($domainName, $locale) = self::getDomainData($file->getFilename());
+            $domain = $collection->getDomain($domainName);
+            $translations = Yaml::parse(file_get_contents($file->getRealPath()));
+            $domain->addTranslationsFromArray($translations, $locale);
+        }
+        return $collection;
+    }
+
+    public static function old(Finder $finder, CollectionFactoryObserverInterface $observer)
+    {
         $keys = [];
         foreach ( $finder as $file )
         {
@@ -28,5 +41,10 @@ class CollectionFactory
             $keys = array_merge($keys, $newKeys);
         }
         return $keys;
+    }
+
+    private static function getDomainData( $getFilename )
+    {
+        return array_slice(explode(".", $getFilename, 3), 0, 2);
     }
 }

@@ -40,27 +40,48 @@ class TranslatorStatusCommand extends Command implements CollectionFactoryObserv
 
         $fileFinder = new FileFinder();
         $finder = $fileFinder->findFilesIn( $path, $name );
-        CollectionFactory::createFromFinder( $finder, $this );
+        $collection = CollectionFactory::createFromFinder( $finder, $this );
+        foreach ( $collection->getDomains() as $domain )
+        {
+            $output->writeln( sprintf( "Domain '%s' has %s keys and support : %s", $domain->getName(), count( $domain->getKeys() ), implode( $domain->getLocales(), ", " ) ) );
+            if ( $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE)
+            {
+                $locales = $domain->getLocales();
+                $keys = $domain->getKeys();
+                foreach ( $keys as $key )
+                {
+                    $output->writeln( "<info>" . $key->getName() . '</info>' );
+                    if ( $output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE )
+                    {
+                        foreach ( $locales as $locale )
+                        {
+                            $output->writeln( sprintf( "%s: %s", $locale, $key->getTranslation( $locale )->getValue() ) );
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public function foundKeys( $keys, $filename )
     {
-        $this->output->writeln(sprintf("Found %s key in total in %s.", count($keys), $filename));
+        $this->output->writeln( sprintf( "Found %s key in total in %s.", count( $keys ), $filename ) );
     }
 
     public function foundNewKeys( $keys, $filename )
     {
         if ( count( $keys ) == 0 )
         {
-            $this->output->writeln(sprintf("No new keys found in %s, great!", $filename));
+            $this->output->writeln( sprintf( "No new keys found in %s, great!", $filename ) );
+
             return;
         }
-        $this->output->writeln(sprintf("Found %s new keys.", count($keys)));
+        $this->output->writeln( sprintf( "Found %s new keys.", count( $keys ) ) );
     }
 
     public function dealingWith( $source )
     {
-        $this->output->writeln(sprintf("Gathering translation keys in <info>%s</info>", $source));
+        $this->output->writeln( sprintf( "Gathering translation keys in <info>%s</info>", $source ) );
     }
 
 }
