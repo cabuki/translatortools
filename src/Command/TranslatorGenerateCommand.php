@@ -33,7 +33,9 @@ class TranslatorGenerateCommand extends Command implements CollectionFactoryObse
 
     protected function execute( InputInterface $input, OutputInterface $output )
     {
+
         $this->output = $output;
+        /*
         $table = new Table($output);
         $table
             ->setHeaders(array('ISBN', 'Title', 'Author'))
@@ -46,9 +48,12 @@ class TranslatorGenerateCommand extends Command implements CollectionFactoryObse
         ;
         $table->render();
         return;
+        */
 
         $path = $input->getArgument( 'path' );
         $name = $input->getArgument( 'name' );
+        $outputPath = $input->getArgument( 'output' );
+
 
         $output->writeln( sprintf( "<comment>Searching for : %s</comment>\n", $path . $name ) );
         $output->writeln( "" );
@@ -56,27 +61,79 @@ class TranslatorGenerateCommand extends Command implements CollectionFactoryObse
         $fileFinder = new FileFinder();
         $finder = $fileFinder->findFilesIn( $path, $name );
         $collection = CollectionFactory::createFromFinder( $finder, $this );
+
+        if ($collection->getDomains() == NULL) //$output->writeln( var_dump($collection) );
+        {
+            die( "No domain found! Check the entered path and name are correct.\n"  );
+        }
+
         foreach ( $collection->getDomains() as $domain )
         {
             $output->writeln( sprintf( "Domain '%s' has %s keys and support : %s", $domain->getName(), count( $domain->getKeys() ), implode( $domain->getLocales(), ", " ) ) );
-            if ( $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE)
+
+            $locales = $domain->getLocales();
+            $keys = $domain->getKeys();
+            foreach ( $locales as $locale )
             {
-                $locales = $domain->getLocales();
-                $keys = $domain->getKeys();
+                $file = fopen($outputPath . $domain->getName() . '.' . $locale . '.yml', 'x+');
+
                 foreach ( $keys as $key )
                 {
-                    $output->writeln( "<info>" . $key->getName() . '</info>' );
-                    if ( $output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE )
+
+
+                    $keyValue = $key->getTranslation( $locale )->getValue();
+
+                    if (!is_array($keyValue)) //Sometimes, the value is an array.
                     {
-                        foreach ( $locales as $locale )
+                        fputs( $file, $key->getName() . ": " );
+                        if (isset($keyValue))
                         {
-                            $output->writeln( sprintf( "%s: %s", $locale, $key->getTranslation( $locale )->getValue() ) );
+                            fputs($file, '"' . $keyValue . '"' . "\n");
                         }
+                        else
+                        {
+                            fputs($file, "#fixme\n");
+                        }
+                    } else {
+                        var_dump($keyValue) ;
+
+                        //TODO
+                        //$this->createKeyRecursively( $file,  $keyValue );
                     }
                 }
+
+
+
+                fclose($file);
+            }
+
+        }
+    }
+
+    /* //TODO
+    protected function createKeyRecursively( File $file, Array $keys )
+    {
+        foreach( $keys as $key)
+        {
+            if (!is_array($key))
+            {
+
+                if (isset($key))
+                {
+                    return $key . ": " . $key->getTranslation( $locale )->getValue() . '"' . "\n";
+                }
+                else
+                {
+                    return $key . ": #fixme\n";
+                }
+            }
+            else
+            {
+                fputs($file, $this->createKeyRecursively( $file, $key ) . "\n");
             }
         }
     }
+    */
 
     public function foundKeys( $keys, $filename )
     {

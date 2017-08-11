@@ -41,6 +41,15 @@ class TranslatorStatusCommand extends Command implements CollectionFactoryObserv
         $fileFinder = new FileFinder();
         $finder = $fileFinder->findFilesIn( $path, $name );
         $collection = CollectionFactory::createFromFinder( $finder, $this );
+
+
+        if ($collection->getDomains() == NULL) //$output->writeln( var_dump($collection) );
+        {
+            //$output->writeln( sprintf( "<comment>No domain found! Check the entered path and name are correct.</comment>\n") );
+            //return;
+            die("No domain found! Check the entered path and name are correct.\n");
+        }
+
         foreach ( $collection->getDomains() as $domain )
         {
             $output->writeln( sprintf( "Domain '%s' has %s keys and support : %s", $domain->getName(), count( $domain->getKeys() ), implode( $domain->getLocales(), ", " ) ) );
