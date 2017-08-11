@@ -19,7 +19,7 @@ class FileFinderCommand extends Command
 {
     protected function configure()
     {
-        $this->setName( "find" )
+        $this->setName( "translator:find" )
              ->setDescription( "Find document according to specific path." )
              ->addArgument( 'path', InputArgument::REQUIRED, 'Where to search' )
              ->addArgument( 'name', InputArgument::REQUIRED, 'The name to match (please read https://symfony.com/doc/current/components/finder.html)' );
