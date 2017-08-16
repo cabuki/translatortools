@@ -107,7 +107,7 @@ class TranslatorGenerateCommand extends Command implements CollectionFactoryObse
         }
     }
 
-    
+
     protected function createKeyRecursively( String $prefix, Array $keys )
     {
         $res  = "";
@@ -119,7 +119,7 @@ class TranslatorGenerateCommand extends Command implements CollectionFactoryObse
                 $res .=  $new_prefix;
                 if (isset($val))
                 {
-                    $res .= ": " . $val . '"' . "\n";
+                    $res .= ': "' . $val . '"' . "\n";
                 }
                 else
                 {
