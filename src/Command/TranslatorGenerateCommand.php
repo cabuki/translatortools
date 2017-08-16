@@ -95,10 +95,7 @@ class TranslatorGenerateCommand extends Command implements CollectionFactoryObse
                             fputs($file, "#fixme\n");
                         }
                     } else {
-                        var_dump($keyValue) ;
-
-                        //TODO
-                        //$this->createKeyRecursively( $file,  $keyValue );
+                        fputs($file, $this->createKeyRecursively( $key->getName(), $keyValue ) );
                     }
                 }
 
@@ -110,30 +107,37 @@ class TranslatorGenerateCommand extends Command implements CollectionFactoryObse
         }
     }
 
-    /* //TODO
-    protected function createKeyRecursively( File $file, Array $keys )
+    
+    protected function createKeyRecursively( String $prefix, Array $keys )
     {
-        foreach( $keys as $key)
+        $res  = "";
+        foreach( $keys as $key => $val)
         {
-            if (!is_array($key))
+            $new_prefix = $prefix . "." . $key;
+            if (!is_array($val))
             {
-
-                if (isset($key))
+                $res .=  $new_prefix;
+                if (isset($val))
                 {
-                    return $key . ": " . $key->getTranslation( $locale )->getValue() . '"' . "\n";
+                    $res .= ": " . $val . '"' . "\n";
                 }
                 else
                 {
-                    return $key . ": #fixme\n";
+                    $res .= ": #fixme\n";
                 }
             }
             else
             {
-                fputs($file, $this->createKeyRecursively( $file, $key ) . "\n");
+                $res .= $this->createKeyRecursively( $new_prefix, $val ) . "\n";
             }
         }
+        return $res;
     }
-    */
+
+
+
+
+
 
     public function foundKeys( $keys, $filename )
     {
