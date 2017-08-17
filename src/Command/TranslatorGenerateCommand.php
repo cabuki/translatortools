@@ -60,7 +60,8 @@ class TranslatorGenerateCommand extends Command implements CollectionFactoryObse
             $keys = $domain->getKeys();
             foreach ( $locales as $locale )
             {
-                $file = fopen($outputPath . $domain->getName() . '.' . $locale . '.yml', 'x+');
+                $file = fopen($outputPath . $domain->getName() . '.' . $locale . '.yml', 'w+');
+
 
                 foreach ( $keys as $key )
                 {
