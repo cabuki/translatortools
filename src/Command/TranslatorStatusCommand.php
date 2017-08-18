@@ -15,6 +15,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Translation\CollectionFactory;
 use Translation\CollectionFactoryObserverInterface;
+use Translation\DomainCollection;
 
 class TranslatorStatusCommand extends Command implements CollectionFactoryObserverInterface
 {
@@ -50,6 +51,11 @@ class TranslatorStatusCommand extends Command implements CollectionFactoryObserv
             die("No domain found! Check the entered path and name are correct.\n");
         }
 
+        $this->generateStatusFromCollection($collection, $output);
+    }
+
+    private function generateStatusFromCollection( DomainCollection $collection, OutputInterface $output )
+    {
         foreach ( $collection->getDomains() as $domain )
         {
             $output->writeln( sprintf( "Domain '%s' has %s keys and support : %s", $domain->getName(), count( $domain->getKeys() ), implode( $domain->getLocales(), ", " ) ) );
@@ -92,5 +98,7 @@ class TranslatorStatusCommand extends Command implements CollectionFactoryObserv
     {
         $this->output->writeln( sprintf( "Gathering translation keys in <info>%s</info>", $source ) );
     }
+
+
 
 }

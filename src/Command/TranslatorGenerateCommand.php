@@ -14,8 +14,10 @@ use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Yaml\Yaml;
 use Translation\CollectionFactory;
 use Translation\CollectionFactoryObserverInterface;
+use Translation\DomainCollection;
 
 class TranslatorGenerateCommand extends Command implements CollectionFactoryObserverInterface
 {
@@ -39,7 +41,6 @@ class TranslatorGenerateCommand extends Command implements CollectionFactoryObse
         $name = $input->getArgument( 'name' );
         $outputPath = $input->getArgument( 'output' );
 
-
         $output->writeln( sprintf( "<comment>Searching for : %s</comment>\n", $path . $name ) );
         $output->writeln( "" );
 
@@ -47,74 +48,81 @@ class TranslatorGenerateCommand extends Command implements CollectionFactoryObse
         $finder = $fileFinder->findFilesIn( $path, $name );
         $collection = CollectionFactory::createFromFinder( $finder, $this );
 
-        if ($collection->getDomains() == NULL) //$output->writeln( var_dump($collection) );
+        if ( $collection->getDomains() == NULL )
         {
-            die( "No domain found! Check the entered path and name are correct.\n"  );
+            die( "No domain found! Check the entered path and name are correct.\n" );
         }
+
+        $this->generateFileFromCollection( $collection, $outputPath, $output );
+    }
+
+    private function generateFileFromCollection( DomainCollection $collection, $outputPath, OutputInterface $output )
+    {
+        $associativeArray = [];
+        $associativeArray = $this->createArrayFromCollection( $collection, $output, $associativeArray );
 
         foreach ( $collection->getDomains() as $domain )
         {
-            $output->writeln( sprintf( "Domain '%s' has %s keys and support : %s", $domain->getName(), count( $domain->getKeys() ), implode( $domain->getLocales(), ", " ) ) );
-
             $locales = $domain->getLocales();
-            $keys = $domain->getKeys();
             foreach ( $locales as $locale )
             {
-                $file = fopen($outputPath . $domain->getName() . '.' . $locale . '.yml', 'x+');
+                $path = sprintf( "%s%s%s.%s.yml", $outputPath, DIRECTORY_SEPARATOR, $domain->getName(), $locale );
 
-                foreach ( $keys as $key )
-                {
-                    $keyValue = $key->getTranslation( $locale )->getValue();
-
-                    if (!is_array($keyValue)) //Sometimes, the value is an array.
-                    {
-                        fputs( $file, $key->getName() . ": " );
-                        if (isset($keyValue))
-                        {
-                            fputs($file, '"' . $keyValue . '"' . "\n");
-                        }
-                        else
-                        {
-                            fputs($file, "#fixme\n");
-                        }
-                    } else {
-                        fputs($file, $this->createKeyRecursively( $key->getName(), $keyValue ) );
-                    }
-                }
-                fclose($file);
+                $this->createFile( $associativeArray[ $domain->getName() ][ $locale ], $path, $output );
             }
         }
     }
 
-
-
-    protected function createKeyRecursively( String $prefix, Array $keys )
+    public function createFile( $array, $outputPath, OutputInterface $output )
     {
-        $res  = "";
-        foreach( $keys as $key => $val)
+        if ( file_exists( $outputPath ) )
         {
-            $new_prefix = $prefix . "." . $key;
-            if (!is_array($val))
+            unlink( $outputPath );
+        }
+        $file = fopen( $outputPath, 'x+' );
+        ksort( $array, SORT_STRING | SORT_FLAG_CASE );
+        foreach ( $array as $key => $value )
+        {
+            if ( $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE )
             {
-                $res .=  $new_prefix;
-                if (isset($val))
+                if ( empty( $value ) )
                 {
-                    $res .= ': "' . $val . '"' . "\n";
+                    $value = "#FIXME";
                 }
-                else
-                {
-                    $res .= ": #fixme\n";
-                }
-            }
-            else
-            {
-                $res .= $this->createKeyRecursively( $new_prefix, $val ) . "\n";
+                $line = sprintf( "%s: %s" . PHP_EOL, $key, $value );
+                $output->write( $line );
+                fwrite( $file, $line );
             }
         }
-        return $res;
+        fclose( $file );
     }
-
-
+//
+//    protected function createKeyRecursively( String $prefix, Array $keys )
+//    {
+//        $res = "";
+//        foreach ( $keys as $key => $val )
+//        {
+//            $new_prefix = $prefix . "." . $key;
+//            if ( ! is_array( $val ) )
+//            {
+//                $res .= $new_prefix;
+//                if ( isset( $val ) )
+//                {
+//                    $res .= ': "' . $val . '"' . "\n";
+//                }
+//                else
+//                {
+//                    $res .= ": #fixme\n";
+//                }
+//            }
+//            else
+//            {
+//                $res .= $this->createKeyRecursively( $new_prefix, $val ) . "\n";
+//            }
+//        }
+//
+//        return $res;
+//    }
 
     public function foundKeys( $keys, $filename )
     {
@@ -135,6 +143,38 @@ class TranslatorGenerateCommand extends Command implements CollectionFactoryObse
     public function dealingWith( $source )
     {
         $this->output->writeln( sprintf( "Gathering translation keys in <info>%s</info>", $source ) );
+    }
+
+    /**
+     * @param DomainCollection $collection
+     * @param OutputInterface  $output
+     * @param                  $associativeArray
+     *
+     * @return array
+     */
+    private function createArrayFromCollection( DomainCollection $collection, OutputInterface $output, $associativeArray )
+    {
+        foreach ( $collection->getDomains() as $domain )
+        {
+            $output->writeln( sprintf( "Domain '%s' has %s keys and support : %s", $domain->getName(), count( $domain->getKeys() ), implode( $domain->getLocales(), ", " ) ) );
+            $domainName = $domain->getName();
+
+            $locales = $domain->getLocales();
+            $keys = $domain->getKeys();
+            $associativeArray[ $domainName ] = [];
+            foreach ( $locales as $locale )
+            {
+                $associativeArray[ $domainName ][ $locale ] = [];
+
+                foreach ( $keys as $key )
+                {
+                    $keyValue = $key->getTranslation( $locale )->getValue();
+                    $associativeArray[ $domainName ][ $locale ][ $key->getName() ] = empty( $keyValue ) ? '#fixme' : $keyValue;
+                }
+            }
+        }
+
+        return $associativeArray;
     }
 
 }
