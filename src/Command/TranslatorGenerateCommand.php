@@ -83,16 +83,17 @@ class TranslatorGenerateCommand extends Command implements CollectionFactoryObse
         ksort( $array, SORT_STRING | SORT_FLAG_CASE );
         foreach ( $array as $key => $value )
         {
+            if ( empty( $value ) )
+            {
+                $value = "#FIXME";
+            }
+            $line = sprintf( "%s: %s" . PHP_EOL, $key, $value );
+
             if ( $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE )
             {
-                if ( empty( $value ) )
-                {
-                    $value = "#FIXME";
-                }
-                $line = sprintf( "%s: %s" . PHP_EOL, $key, $value );
                 $output->write( $line );
-                fwrite( $file, $line );
             }
+            fwrite( $file, $line );
         }
         fclose( $file );
     }

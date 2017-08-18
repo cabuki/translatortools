@@ -11,5 +11,6 @@ $app = new Application();
 $app->add(new \Command\FileFinderCommand());
 $app->add(new \Command\TranslatorStatusCommand());
 $app->add(new \Command\TranslatorGenerateCommand());
+$app->add(new \Command\TranslatorDiffCommand());
 
 $app->run();
