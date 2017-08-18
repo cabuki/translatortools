@@ -95,21 +95,27 @@ class TranslatorDiffCommand extends Command implements CollectionFactoryObserver
         {
             // Can be better ?
             {
+                //*
                 $bool = 0;
                 $tmp = isset($value[0]) ? $value[0] : '';
                 for ($i = 1 ; $i < $nbCollections && !$bool; $i++)
                 {
                     $bool = strcmp($tmp, isset($value[$i]) ? $value[$i] : '' );
                 }
+                //*/
 
-                if ($bool)
+                if ($bool) // ( strcmp(isset($value[0]) ? $value[0] : '', isset($value[1]) ? $value[1] : '' ) )
                 {
+                    //$line = sprintf("%s;%s;%s" . PHP_EOL, $key,isset($value[0]) ? $value[0] : '', isset($value[1]) ? $value[1] : '' );
+
+                    //*
                     $line = sprintf("%s", $key);
                     for ($i = 0; $i < $nbCollections; $i++)
                     {
                         $line .= sprintf(";%s", isset($value[$i]) ? $value[$i] : '');
                     }
                     $line .= sprintf(PHP_EOL);
+                    //*/
                     if ( $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE )
                     {
                         $output->write($line);
@@ -124,9 +130,9 @@ class TranslatorDiffCommand extends Command implements CollectionFactoryObserver
 
 
     /**
-     * @param DomainCollection $collections
-     * @param OutputInterface  $output
-     * @param                  $associativeArray
+     * @param DomainCollection[]    $collections
+     * @param OutputInterface       $output
+     * @param                       $associativeArray
      *
      * @return array
      */
