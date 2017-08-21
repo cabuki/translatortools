@@ -71,13 +71,13 @@ class TranslatorDiffCommand extends Command implements CollectionFactoryObserver
     {
         $associativeArray = [];
         $associativeArray = $this->createArrayFromCollections( $collections, $output, $associativeArray );
-        foreach ($associativeArray as $domain => $value)
+
+        foreach ($associativeArray as $domain => $locales)
         {
-            foreach ($value as $locale => $val)
+            foreach ($locales as $locale => $keys)
             {
                 $path = sprintf( "%s%s%s.%s.csv", $outputPath, DIRECTORY_SEPARATOR, $domain, $locale );
-
-                $this->createFile( $val, count($collections), $path, $output );
+                $this->createFile( $keys, count($collections), $path, $output );
             }
         }
     }
@@ -90,41 +90,50 @@ class TranslatorDiffCommand extends Command implements CollectionFactoryObserver
             unlink( $outputPath );
         }
         $file = fopen( $outputPath, 'x+' );
+        $empty = 1;
         ksort( $array, SORT_STRING | SORT_FLAG_CASE );
         foreach ( $array as $key => $value )
-        {
-            // Can be better ?
+        {// Can be better ?
+            //*
+            $bool = 0;
+            $tmp = isset($value[0]) ? $value[0] : '';
+            for ($i = 1 ; $i < $nbCollections && !$bool; $i++)
             {
-                //*
-                $bool = 0;
-                $tmp = isset($value[0]) ? $value[0] : '';
-                for ($i = 1 ; $i < $nbCollections && !$bool; $i++)
-                {
-                    $bool = strcmp($tmp, isset($value[$i]) ? $value[$i] : '' );
-                }
-                //*/
+                $bool = strcmp($tmp, isset($value[$i]) ? $value[$i] : '' );
+            }
+            //*/
 
-                if ($bool) // ( strcmp(isset($value[0]) ? $value[0] : '', isset($value[1]) ? $value[1] : '' ) )
-                {
-                    //$line = sprintf("%s;%s;%s" . PHP_EOL, $key,isset($value[0]) ? $value[0] : '', isset($value[1]) ? $value[1] : '' );
+            if ($bool) // ( strcmp(isset($value[0]) ? $value[0] : '', isset($value[1]) ? $value[1] : '' ) )
+            {
+                $empty = 0;
 
-                    //*
-                    $line = sprintf("%s", $key);
-                    for ($i = 0; $i < $nbCollections; $i++)
+                $line = sprintf("%s", $key);
+                for ($i = 0; $i < $nbCollections /*2*/; $i++)
+                {
+                    if (isset($value[$i]))
                     {
-                        $line .= sprintf(";%s", isset($value[$i]) ? $value[$i] : '');
+                        $value[$i] = str_replace("\n", "\\n", $value[$i]); // To write '\n' and not interpret it
+                        $value[$i] = str_replace('"', '""', $value[$i]); // To not interpret double quotes in the csv
+                        $line .= sprintf(';"%s"', $value[$i]); // Add quotes to not interpret semi-colon in $value
                     }
-                    $line .= sprintf(PHP_EOL);
-                    //*/
-                    if ( $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE )
+                    else
                     {
-                        $output->write($line);
+                        $line .= sprintf(';');
                     }
-                    fwrite($file, $line);
                 }
+                $line .= sprintf(PHP_EOL);
+                if ( $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE )
+                {
+                    $output->write($line);
+                }
+                fwrite($file, $line);
             }
         }
         fclose( $file );
+        if ( $empty ) // To avoid keeping a lot of empty files if there is no difference
+        {
+            unlink( $outputPath );
+        }
     }
 
 
@@ -166,7 +175,7 @@ class TranslatorDiffCommand extends Command implements CollectionFactoryObserver
                         {
                             $associativeArray[$domainName][$locale][$key->getName()] = [];
                         }
-                        $associativeArray[$domainName][$locale][$key->getName()][$i] = empty( $keyValue ) ? '#fixme' : $keyValue;;
+                        $associativeArray[$domainName][$locale][$key->getName()][$i] = empty( $keyValue ) ? '#fixme' : $keyValue;
                     }
                 }
             }
