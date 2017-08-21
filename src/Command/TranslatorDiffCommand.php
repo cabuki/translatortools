@@ -106,27 +106,34 @@ class TranslatorDiffCommand extends Command implements CollectionFactoryObserver
             if ($bool) // ( strcmp(isset($value[0]) ? $value[0] : '', isset($value[1]) ? $value[1] : '' ) )
             {
                 $empty = 0;
-
-                $line = sprintf("%s", $key);
+                $array = [$key];
                 for ($i = 0; $i < $nbCollections /*2*/; $i++)
+                {
+                    $array[] = isset($value[$i]) ? $value[$i] : '';
+                }
+                fputcsv($file, $array, ';', '"');
+
+                /*
+                $line = sprintf("%s", $key);
+                for ($i = 0; $i < $nbCollections ; $i++)
                 {
                     if (isset($value[$i]))
                     {
                         $value[$i] = str_replace("\n", "\\n", $value[$i]); // To write '\n' and not interpret it
                         $value[$i] = str_replace('"', '""', $value[$i]); // To not interpret double quotes in the csv
                         $line .= sprintf(';"%s"', $value[$i]); // Add quotes to not interpret semi-colon in $value
-                    }
-                    else
-                    {
+                    } else {
                         $line .= sprintf(';');
                     }
                 }
                 $line .= sprintf(PHP_EOL);
+                fwrite($file, $line);
+
                 if ( $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE )
                 {
                     $output->write($line);
                 }
-                fwrite($file, $line);
+                */
             }
         }
         fclose( $file );

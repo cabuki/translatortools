@@ -102,15 +102,17 @@ class TranslatorConvertCommand extends Command implements CollectionFactoryObser
         ksort( $array, SORT_STRING | SORT_FLAG_CASE );
         foreach ( $array as $key => $value )
         {
+            fputcsv($file, [$key, $value], ';', '"');
+            /*
             $value = str_replace("\n", "\\n", $value); // To write '\n' and not interpret it
             $value = str_replace('"', '""', $value); // To not interpret double quotes in the csv
             $line = sprintf('%s;"%s"' . PHP_EOL, $key, $value); // Add quotes to not interpret semi-colon in $value
-
+            fwrite($file, $line);
+            */
             if ( $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE )
             {
                 $output->write($line);
             }
-            fwrite($file, $line);
         }
         fclose( $file );
     }
