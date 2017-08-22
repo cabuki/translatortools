@@ -16,11 +16,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Yaml;
-use Translation\CollectionFactory;
-use Translation\CollectionFactoryObserverInterface;
-use Translation\DomainCollection;
 
-class TranslatorConvertCommand extends Command implements CollectionFactoryObserverInterface
+
+class TranslatorConvertCommand extends Command
 {
     /** @var  OutputInterface */
     protected $output;
@@ -29,7 +27,7 @@ class TranslatorConvertCommand extends Command implements CollectionFactoryObser
     {
         $this->setName( "translator:convert" )
             ->setDescription( "Find document according to specific path." )
-            ->addArgument( 'convertType', InputArgument::REQUIRED, 'The result of the conversion' )
+            ->addArgument( 'convertTo', InputArgument::REQUIRED, 'The result of the conversion' )
             ->addArgument( 'path', InputArgument::REQUIRED, 'Where to search' )
             ->addArgument( 'name', InputArgument::REQUIRED, 'The name to match (please read https://symfony.com/doc/current/components/finder.html)' )
             ->addArgument( 'output', InputArgument::REQUIRED, 'Where to store new generated files' );
@@ -39,47 +37,45 @@ class TranslatorConvertCommand extends Command implements CollectionFactoryObser
     {
         $this->output = $output;
 
-        $convertType = $input->getArgument( 'convertType' );
+        $convertTo = $input->getArgument( 'convertTo' );
         $path = $input->getArgument( 'path' );
         $name = $input->getArgument( 'name' );
         $outputPath = $input->getArgument( 'output' );
 
-        $output->writeln( sprintf( "<comment>Searching for : %s</comment>\n", $path . $name) );
-        $output->writeln( "" );
-
-        $fileFinder = new FileFinder();
-        $finder = $fileFinder->findFilesIn( $path, $name );
-
-        if ( strcmp($convertType, "csv") == 0 || strcmp($convertType, "yml") == 0)
+        if ( strcmp($convertTo, "csv") == 0 || strcmp($convertTo, "yml") == 0)
         {
+            $output->writeln( sprintf( "<comment>Searching for : %s</comment>\n", $path . $name) );
+            $output->writeln( "" );
+
+            $fileFinder = new FileFinder();
+            $finder = $fileFinder->findFilesIn( $path, $name );
+
             $fileList = [];
             foreach ( $finder as $file )
             {
                 $fileList[] = $file->getRelativePathname(); //$fileList
             }
-            $this->generateFile($fileList, $path, $outputPath, $convertType, $output);
+            $this->generateFile($fileList, $path, $outputPath, $convertTo, $output);
         }
         else
         {
-            die( "This conversion is not supported.\n"  );
+            die( $output->writeln( sprintf( "<comment>This conversion is not supported: %s</comment>", $convertTo) ) );
         }
     }
 
 
-    private function generateFile($fileList, $inputPath, $outputPath, $convertType, OutputInterface $output)
+    private function generateFile($fileList, $inputPath, $outputPath, $convertTo, OutputInterface $output)
     {
-
         foreach ($fileList as $file)
         {
             $f = explode(".", $file);
             $ip = $inputPath . DIRECTORY_SEPARATOR . $file;
-            $op = $outputPath . DIRECTORY_SEPARATOR  . $f[0] . '.' . $f[1] . '.' . $convertType ;
+            $op = $outputPath . DIRECTORY_SEPARATOR  . $f[0] . '.' . $f[1] . '.' . $convertTo ;
 
-            $function = 'create' . $convertType . 'FileFrom' . $f[2] ;
+            $function = 'create' . $convertTo . 'FileFrom' . $f[2] ;
             $this->$function($ip, $op, $output);
         }
     }
-
 
 
     public function createCSVFileFromYML( $inputPath, $outputPath, OutputInterface $output )
@@ -110,7 +106,6 @@ class TranslatorConvertCommand extends Command implements CollectionFactoryObser
     }
 
 
-
     public function createYMLFileFromCSV( $inputPath, $outputPath, OutputInterface $output )
     {
         if ( file_exists( $outputPath ) )
@@ -123,7 +118,7 @@ class TranslatorConvertCommand extends Command implements CollectionFactoryObser
 
         if ( $csvFile ) {
             while (($data = fgetcsv($csvFile, 3000, ";")) == true) {
-                $value = $dumper->dump($data[1], 10); // To add adequat quotes around string
+                $value = $dumper->dump($data[1], 10); // To add appropriate quotes around string
                 $line = $data[0] . ': ' . $value . PHP_EOL;
                 fwrite($ymlFile,  $line);
 
@@ -135,31 +130,6 @@ class TranslatorConvertCommand extends Command implements CollectionFactoryObser
         }
         fclose($csvFile);
         fclose( $ymlFile );
-    }
-
-
-
-
-
-    public function foundKeys( $keys, $filename )
-    {
-        $this->output->writeln( sprintf( "Found %s key in total in %s.", count( $keys ), $filename ) );
-    }
-
-    public function foundNewKeys( $keys, $filename )
-    {
-        if ( count( $keys ) == 0 )
-        {
-            $this->output->writeln( sprintf( "No new keys found in %s, great!", $filename ) );
-
-            return;
-        }
-        $this->output->writeln( sprintf( "Found %s new keys.", count( $keys ) ) );
-    }
-
-    public function dealingWith( $source )
-    {
-        $this->output->writeln( sprintf( "Gathering translation keys in <info>%s</info>", $source ) );
     }
 
 }
