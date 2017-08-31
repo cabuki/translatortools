@@ -58,7 +58,7 @@ class TranslatorStatusCommand extends Command implements CollectionFactoryObserv
     {
         foreach ( $collection->getDomains() as $domain )
         {
-            $output->writeln( sprintf( "Domain '%s' has %s keys and support : %s", $domain->getName(), count( $domain->getKeys() ), implode( $domain->getLocales(), ", " ) ) );
+            $output->writeln( sprintf( "Domain '%s' has %s keys and supports : %s", $domain->getName(), count( $domain->getKeys() ), implode( $domain->getLocales(), ", " ) ) );
             if ( $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE)
             {
                 $locales = $domain->getLocales();

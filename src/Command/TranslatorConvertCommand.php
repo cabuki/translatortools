@@ -17,7 +17,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Yaml;
 
-
 class TranslatorConvertCommand extends Command
 {
     /** @var  OutputInterface */
@@ -26,11 +25,11 @@ class TranslatorConvertCommand extends Command
     protected function configure()
     {
         $this->setName( "translator:convert" )
-            ->setDescription( "Find document according to specific path." )
-            ->addArgument( 'convertTo', InputArgument::REQUIRED, 'The result of the conversion' )
-            ->addArgument( 'path', InputArgument::REQUIRED, 'Where to search' )
-            ->addArgument( 'name', InputArgument::REQUIRED, 'The name to match (please read https://symfony.com/doc/current/components/finder.html)' )
-            ->addArgument( 'output', InputArgument::REQUIRED, 'Where to store new generated files' );
+             ->setDescription( "Find document according to specific path." )
+             ->addArgument( 'convertTo', InputArgument::REQUIRED, 'The result of the conversion' )
+             ->addArgument( 'path', InputArgument::REQUIRED, 'Where to search' )
+             ->addArgument( 'name', InputArgument::REQUIRED, 'The name to match (please read https://symfony.com/doc/current/components/finder.html)' )
+             ->addArgument( 'output', InputArgument::REQUIRED, 'Where to store new generated files' );
     }
 
     protected function execute( InputInterface $input, OutputInterface $output )
@@ -42,9 +41,9 @@ class TranslatorConvertCommand extends Command
         $name = $input->getArgument( 'name' );
         $outputPath = $input->getArgument( 'output' );
 
-        if ( strcmp($convertTo, "csv") == 0 || strcmp($convertTo, "yml") == 0)
+        if ( strcmp( $convertTo, "csv" ) == 0 || strcmp( $convertTo, "yml" ) == 0 )
         {
-            $output->writeln( sprintf( "<comment>Searching for : %s</comment>\n", $path . $name) );
+            $output->writeln( sprintf( "<comment>Searching for : %s</comment>\n", $path . $name ) );
             $output->writeln( "" );
 
             $fileFinder = new FileFinder();
@@ -55,28 +54,48 @@ class TranslatorConvertCommand extends Command
             {
                 $fileList[] = $file->getRelativePathname(); //$fileList
             }
-            $this->generateFile($fileList, $path, $outputPath, $convertTo, $output);
+            $this->generateFile( $fileList, $path, $outputPath, $convertTo, $output );
         }
         else
         {
-            die( $output->writeln( sprintf( "<comment>This conversion is not supported: %s</comment>", $convertTo) ) );
+            die( $output->writeln( sprintf( "<comment>This conversion is not supported: %s</comment>", $convertTo ) ) );
         }
     }
 
-
-    private function generateFile($fileList, $inputPath, $outputPath, $convertTo, OutputInterface $output)
+    private function generateFile( $fileList, $inputPath, $outputPath, $convertTo, OutputInterface $output )
     {
-        foreach ($fileList as $file)
+        foreach ( $fileList as $file )
         {
-            $f = explode(".", $file);
-            $ip = $inputPath . DIRECTORY_SEPARATOR . $file;
-            $op = $outputPath . DIRECTORY_SEPARATOR  . $f[0] . '.' . $f[1] . '.' . $convertTo ;
+            // let's split C:\wamp\www\market\app\Ressources\translations\messages.en.yml into [C:, wamp, ..., messages.en.yml]
+            $tmp = explode( DIRECTORY_SEPARATOR, $file );
+            // let's split messages.en.yml into [messages, en, yml]
+            $f = explode( ".", $tmp[ count( $tmp ) - 1 ] );
 
-            $function = 'create' . $convertTo . 'FileFrom' . $f[2] ;
-            $this->$function($ip, $op, $output);
+            $ip = $inputPath . DIRECTORY_SEPARATOR . $file;
+            $op = $outputPath . DIRECTORY_SEPARATOR . $f[ 0 ] . '.' . $f[ 1 ] . '.' . $convertTo;
+
+            $function = 'create' . $convertTo . 'FileFrom' . $f[ 2 ];
+            $this->$function( $ip, $op, $output );
         }
     }
 
+    public static function flatten( $array, $prefix = '' )
+    {
+        $result = [];
+        foreach ( $array as $key => $value )
+        {
+            if ( is_array( $value ) )
+            {
+                $result = $result + self::flatten( $value, $prefix . $key . '.' );
+            }
+            else
+            {
+                $result[ $prefix . $key ] = $value;
+            }
+        }
+
+        return $result;
+    }
 
     public function createCSVFileFromYML( $inputPath, $outputPath, OutputInterface $output )
     {
@@ -84,12 +103,15 @@ class TranslatorConvertCommand extends Command
         {
             unlink( $outputPath );
         }
-        $ymlContent = Yaml::parse(file_get_contents($inputPath));
+        $ymlContent = Yaml::parse( file_get_contents( $inputPath ) );
         $csvFile = fopen( $outputPath, 'x+' );
         ksort( $ymlContent, SORT_STRING | SORT_FLAG_CASE );
+
+        $ymlContent = self::flatten( $ymlContent, '' );
+
         foreach ( $ymlContent as $key => $value )
         {
-            fputcsv($csvFile, [$key, $value], ';', '"');
+            fputcsv( $csvFile, [ $key, $value ], ';', '"' );
             /*
             $value = str_replace("\n", "\\n", $value); // To write '\n' and not interpret it
             $value = str_replace('"', '""', $value); // To not interpret double quotes in the csv
@@ -105,7 +127,6 @@ class TranslatorConvertCommand extends Command
         fclose( $csvFile );
     }
 
-
     public function createYMLFileFromCSV( $inputPath, $outputPath, OutputInterface $output )
     {
         if ( file_exists( $outputPath ) )
@@ -114,21 +135,23 @@ class TranslatorConvertCommand extends Command
         }
         $dumper = new Dumper();
         $ymlFile = fopen( $outputPath, 'x+' );
-        $csvFile = fopen($inputPath, "r");
+        $csvFile = fopen( $inputPath, "r" );
 
-        if ( $csvFile ) {
-            while (($data = fgetcsv($csvFile, 3000, ";")) == true) {
-                $value = $dumper->dump($data[1], 10); // To add appropriate quotes around string
-                $line = $data[0] . ': ' . $value . PHP_EOL;
-                fwrite($ymlFile,  $line);
+        if ( $csvFile )
+        {
+            while ( ( $data = fgetcsv( $csvFile, 3000, ";" ) ) == TRUE )
+            {
+                $value = $dumper->dump( $data[ 1 ], 10 ); // To add appropriate quotes around string
+                $line = $data[ 0 ] . ': ' . $value . PHP_EOL;
+                fwrite( $ymlFile, $line );
 
                 if ( $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE )
                 {
-                    $output->write($line);
+                    $output->write( $line );
                 }
             }
         }
-        fclose($csvFile);
+        fclose( $csvFile );
         fclose( $ymlFile );
     }
 

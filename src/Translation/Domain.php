@@ -32,6 +32,9 @@ class Domain
     public function addTranslationsFromArray( $translations, $locale )
     {
         $this->addLocale($locale);
+        if(!is_array($translations)){
+            return;
+        }
         foreach ( $translations as $key => $value )
         {
             $key = $this->getKey( $key );
